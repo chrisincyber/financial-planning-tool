@@ -17,6 +17,7 @@ import {
   LogOut,
   User,
   Landmark,
+  Calculator,
 } from 'lucide-react';
 import { useClients } from '../context/ClientContext';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Investment', href: '/investment', icon: TrendingUp },
   { name: 'Vorsorge', href: '/pension', icon: PiggyBank },
   { name: 'Budget', href: '/budget', icon: Wallet },
+  { name: 'Rechner', href: '/calculators', icon: Calculator },
 ];
 
 export default function Sidebar() {

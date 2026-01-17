@@ -24,6 +24,7 @@ import Pension from './pages/Pension';
 import Budget from './pages/Budget';
 import NewClient from './pages/NewClient';
 import Assets from './pages/Assets';
+import Calculators from './pages/Calculators';
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
               <Route path="investment" element={<Investment />} />
               <Route path="pension" element={<Pension />} />
               <Route path="budget" element={<Budget />} />
+              <Route path="calculators" element={<Calculators />} />
             </Route>
 
             {/* Catch all */}
