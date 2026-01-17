@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ClientProvider } from './context/ClientContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -25,7 +25,7 @@ import NewClient from './pages/NewClient';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <ClientProvider>
           <Routes>
@@ -74,7 +74,7 @@ function App() {
           </Routes>
         </ClientProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
