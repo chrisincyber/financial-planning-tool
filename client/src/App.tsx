@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ClientProvider } from './context/ClientContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 
 // Auth pages
@@ -25,10 +26,11 @@ import NewClient from './pages/NewClient';
 
 function App() {
   return (
-    <HashRouter>
-      <AuthProvider>
-        <ClientProvider>
-          <Routes>
+    <ErrorBoundary>
+      <HashRouter>
+        <AuthProvider>
+          <ClientProvider>
+            <Routes>
             {/* Public auth routes */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
@@ -71,10 +73,11 @@ function App() {
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </ClientProvider>
-      </AuthProvider>
-    </HashRouter>
+            </Routes>
+          </ClientProvider>
+        </AuthProvider>
+      </HashRouter>
+    </ErrorBoundary>
   );
 }
 
