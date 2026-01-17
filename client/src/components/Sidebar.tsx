@@ -16,6 +16,8 @@ import {
   Plus,
   LogOut,
   User,
+  Landmark,
+  Calculator,
 } from 'lucide-react';
 import { useClients } from '../context/ClientContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +27,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Persönliche Daten', href: '/personal', icon: Users },
   { name: 'Ziele & Planung', href: '/goals', icon: Target },
+  { name: 'Vermögen', href: '/assets', icon: Landmark },
   { name: 'Wohnen', href: '/housing', icon: Building2 },
   { name: 'Sachversicherung', href: '/property-insurance', icon: Shield },
   { name: 'Krankenversicherung', href: '/health-insurance', icon: Heart },
@@ -33,6 +36,7 @@ const navigation = [
   { name: 'Investment', href: '/investment', icon: TrendingUp },
   { name: 'Vorsorge', href: '/pension', icon: PiggyBank },
   { name: 'Budget', href: '/budget', icon: Wallet },
+  { name: 'Rechner', href: '/calculators', icon: Calculator },
 ];
 
 export default function Sidebar() {

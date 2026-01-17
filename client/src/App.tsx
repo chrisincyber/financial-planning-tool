@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ClientProvider } from './context/ClientContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 
 // Auth pages
@@ -22,13 +23,16 @@ import Investment from './pages/Investment';
 import Pension from './pages/Pension';
 import Budget from './pages/Budget';
 import NewClient from './pages/NewClient';
+import Assets from './pages/Assets';
+import Calculators from './pages/Calculators';
 
 function App() {
   return (
-    <HashRouter>
-      <AuthProvider>
-        <ClientProvider>
-          <Routes>
+    <ErrorBoundary>
+      <HashRouter>
+        <AuthProvider>
+          <ClientProvider>
+            <Routes>
             {/* Public auth routes */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
@@ -59,6 +63,7 @@ function App() {
               {/* Client data routes */}
               <Route path="personal" element={<PersonalInfo />} />
               <Route path="goals" element={<Goals />} />
+              <Route path="assets" element={<Assets />} />
               <Route path="housing" element={<Housing />} />
               <Route path="property-insurance" element={<PropertyInsurance />} />
               <Route path="health-insurance" element={<HealthInsurance />} />
@@ -67,14 +72,16 @@ function App() {
               <Route path="investment" element={<Investment />} />
               <Route path="pension" element={<Pension />} />
               <Route path="budget" element={<Budget />} />
+              <Route path="calculators" element={<Calculators />} />
             </Route>
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </ClientProvider>
-      </AuthProvider>
-    </HashRouter>
+            </Routes>
+          </ClientProvider>
+        </AuthProvider>
+      </HashRouter>
+    </ErrorBoundary>
   );
 }
 

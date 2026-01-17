@@ -128,7 +128,20 @@ function createSingleRecordService<T extends { id?: string; clientId: string }>(
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') return null;
+        if (error.code === 'PGRST116') {
+          // No record exists - create one with default values
+          const { data: newData, error: insertError } = await supabase
+            .from(tableName)
+            .insert({ client_id: clientId })
+            .select('*')
+            .single();
+
+          if (insertError) {
+            console.error(`Error creating ${tableName}:`, insertError);
+            return null;
+          }
+          return mapFromDb<T>(newData);
+        }
         throw error;
       }
       return mapFromDb<T>(data);
