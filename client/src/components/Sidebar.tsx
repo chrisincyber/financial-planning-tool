@@ -14,8 +14,11 @@ import {
   LayoutDashboard,
   ChevronDown,
   Plus,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { useClients } from '../context/ClientContext';
+import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 
 const navigation = [
@@ -34,8 +37,14 @@ const navigation = [
 
 export default function Sidebar() {
   const { clients, currentClient, setCurrentClientId } = useClients();
+  const { profile, signOut, isAdvisor } = useAuth();
   const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth/login');
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-primary-800 text-white">
@@ -47,7 +56,7 @@ export default function Sidebar() {
               <Home className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">FINA</h1>
+              <h1 className="text-lg font-bold">Petertil</h1>
               <p className="text-xs text-primary-300">Finanzplanung</p>
             </div>
           </div>
@@ -70,17 +79,21 @@ export default function Sidebar() {
 
             {clientDropdownOpen && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg z-50 max-h-64 overflow-auto">
-                <button
-                  onClick={() => {
-                    navigate('/clients/new');
-                    setClientDropdownOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-primary-600 hover:bg-primary-50 text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Neuer Klient
-                </button>
-                <div className="border-t border-gray-100" />
+                {isAdvisor && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate('/clients/new');
+                        setClientDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-primary-600 hover:bg-primary-50 text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Neuer Klient
+                    </button>
+                    <div className="border-t border-gray-100" />
+                  </>
+                )}
                 {clients.map((client) => (
                   <button
                     key={client.id}
@@ -128,11 +141,26 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* Footer */}
+        {/* User & Logout */}
         <div className="px-4 py-4 border-t border-primary-700">
-          <p className="text-xs text-primary-400 text-center">
-            Persönlich · Nachhaltig · Transparent
-          </p>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{profile?.full_name || profile?.email}</p>
+              <p className="text-xs text-primary-300">
+                {isAdvisor ? 'Berater' : 'Kunde'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm"
+          >
+            <LogOut className="w-4 h-4" />
+            Abmelden
+          </button>
         </div>
       </div>
     </aside>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreateBudget, getOrCreateInvestment } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { budgetService, investmentService } from '../services/data.service';
 import { Save, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
 import type { Budget as BudgetType, Investment } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -20,6 +21,8 @@ const expenseCategories = [
 
 export default function Budget() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [data, setData] = useState<BudgetType | null>(null);
   const [investment, setInvestment] = useState<Investment | null>(null);
   const [saving, setSaving] = useState(false);
@@ -27,8 +30,8 @@ export default function Budget() {
   useEffect(() => {
     if (currentClient?.id) {
       Promise.all([
-        getOrCreateBudget(currentClient.id),
-        getOrCreateInvestment(currentClient.id),
+        budgetService.getByClientId(currentClient.id),
+        investmentService.getByClientId(currentClient.id),
       ]).then(([b, i]) => {
         setData(b);
         setInvestment(i);
@@ -49,10 +52,10 @@ export default function Budget() {
   }
 
   const handleSave = async () => {
-    if (!data.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.budget.update(data.id, data);
+      await budgetService.upsert(currentClient.id, data);
     } finally {
       setSaving(false);
     }
@@ -108,14 +111,16 @@ export default function Budget() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Budget</h2>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -188,6 +193,7 @@ export default function Budget() {
                               type="checkbox"
                               checked={data.taxesDA || false}
                               onChange={(e) => update({ taxesDA: e.target.checked })}
+                              disabled={isReadOnly}
                               className="w-3 h-3 text-primary-600 border-gray-300 rounded"
                             />
                             <span className="text-xs text-gray-500">DA</span>
@@ -201,6 +207,7 @@ export default function Budget() {
                           onChange={(e) =>
                             update({ [manKey]: parseFloat(e.target.value) || undefined })
                           }
+                          disabled={isReadOnly}
                           className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                         />
                       </td>
@@ -211,6 +218,7 @@ export default function Budget() {
                           onChange={(e) =>
                             update({ [womanKey]: parseFloat(e.target.value) || undefined })
                           }
+                          disabled={isReadOnly}
                           className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                         />
                       </td>
@@ -277,6 +285,7 @@ export default function Budget() {
               type="number"
               value={data.savingsRateMan || ''}
               onChange={(e) => update({ savingsRateMan: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -286,6 +295,7 @@ export default function Budget() {
               type="number"
               value={data.savingsRateWoman || ''}
               onChange={(e) => update({ savingsRateWoman: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>

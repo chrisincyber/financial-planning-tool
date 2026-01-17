@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreatePropertyInsurance } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { propertyInsuranceService } from '../services/data.service';
 import { Save, Shield } from 'lucide-react';
 import type { PropertyInsurance as PropertyInsuranceType } from '../types';
 
 export default function PropertyInsurance() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [data, setData] = useState<PropertyInsuranceType | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentClient?.id) {
-      getOrCreatePropertyInsurance(currentClient.id).then(setData);
+      propertyInsuranceService.getByClientId(currentClient.id).then(setData);
     }
   }, [currentClient]);
 
@@ -28,10 +31,10 @@ export default function PropertyInsurance() {
   }
 
   const handleSave = async () => {
-    if (!data.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.propertyInsurance.update(data.id, data);
+      await propertyInsuranceService.upsert(currentClient.id, data);
     } finally {
       setSaving(false);
     }
@@ -50,14 +53,16 @@ export default function PropertyInsurance() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Sachversicherung</h2>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -85,6 +90,7 @@ export default function PropertyInsurance() {
                     type="checkbox"
                     checked={data.hasPrivateLiability}
                     onChange={(e) => update({ hasPrivateLiability: e.target.checked })}
+                    disabled={isReadOnly}
                     className="w-5 h-5 text-primary-600 border-gray-300 rounded"
                   />
                 </td>
@@ -93,7 +99,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.privateLiabilityMan || ''}
                     onChange={(e) => update({ privateLiabilityMan: e.target.value })}
-                    disabled={!data.hasPrivateLiability}
+                    disabled={isReadOnly || !data.hasPrivateLiability}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -103,7 +109,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.privateLiabilityWoman || ''}
                     onChange={(e) => update({ privateLiabilityWoman: e.target.value })}
-                    disabled={!data.hasPrivateLiability}
+                    disabled={isReadOnly || !data.hasPrivateLiability}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -123,6 +129,7 @@ export default function PropertyInsurance() {
                     type="checkbox"
                     checked={data.hasHouseholdContents}
                     onChange={(e) => update({ hasHouseholdContents: e.target.checked })}
+                    disabled={isReadOnly}
                     className="w-5 h-5 text-primary-600 border-gray-300 rounded"
                   />
                 </td>
@@ -131,7 +138,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.householdContentsMan || ''}
                     onChange={(e) => update({ householdContentsMan: e.target.value })}
-                    disabled={!data.hasHouseholdContents}
+                    disabled={isReadOnly || !data.hasHouseholdContents}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -141,7 +148,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.householdContentsWoman || ''}
                     onChange={(e) => update({ householdContentsWoman: e.target.value })}
-                    disabled={!data.hasHouseholdContents}
+                    disabled={isReadOnly || !data.hasHouseholdContents}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -161,6 +168,7 @@ export default function PropertyInsurance() {
                     type="checkbox"
                     checked={data.hasVehicle}
                     onChange={(e) => update({ hasVehicle: e.target.checked })}
+                    disabled={isReadOnly}
                     className="w-5 h-5 text-primary-600 border-gray-300 rounded"
                   />
                 </td>
@@ -169,7 +177,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.vehicleMan || ''}
                     onChange={(e) => update({ vehicleMan: e.target.value })}
-                    disabled={!data.hasVehicle}
+                    disabled={isReadOnly || !data.hasVehicle}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -179,7 +187,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.vehicleWoman || ''}
                     onChange={(e) => update({ vehicleWoman: e.target.value })}
-                    disabled={!data.hasVehicle}
+                    disabled={isReadOnly || !data.hasVehicle}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -199,6 +207,7 @@ export default function PropertyInsurance() {
                     type="checkbox"
                     checked={data.hasLegalProtection}
                     onChange={(e) => update({ hasLegalProtection: e.target.checked })}
+                    disabled={isReadOnly}
                     className="w-5 h-5 text-primary-600 border-gray-300 rounded"
                   />
                 </td>
@@ -207,7 +216,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.legalProtectionMan || ''}
                     onChange={(e) => update({ legalProtectionMan: e.target.value })}
-                    disabled={!data.hasLegalProtection}
+                    disabled={isReadOnly || !data.hasLegalProtection}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -217,7 +226,7 @@ export default function PropertyInsurance() {
                     type="text"
                     value={data.legalProtectionWoman || ''}
                     onChange={(e) => update({ legalProtectionWoman: e.target.value })}
-                    disabled={!data.hasLegalProtection}
+                    disabled={isReadOnly || !data.hasLegalProtection}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
                     placeholder="Versicherung / Police"
                   />
@@ -234,6 +243,7 @@ export default function PropertyInsurance() {
         <textarea
           value={data.remarks || ''}
           onChange={(e) => update({ remarks: e.target.value })}
+          disabled={isReadOnly}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           placeholder="Weitere Bemerkungen zu den Sachversicherungen..."

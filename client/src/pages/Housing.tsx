@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreateHousing } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { housingService } from '../services/data.service';
 import { Save, Building2, Home, Calculator } from 'lucide-react';
 import type { Housing as HousingType } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -9,12 +10,14 @@ const COLORS = ['#0d9488', '#0f766e', '#115e59'];
 
 export default function Housing() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [housing, setHousing] = useState<HousingType | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentClient?.id) {
-      getOrCreateHousing(currentClient.id).then(setHousing);
+      housingService.getByClientId(currentClient.id).then(setHousing);
     }
   }, [currentClient]);
 
@@ -31,10 +34,10 @@ export default function Housing() {
   }
 
   const handleSave = async () => {
-    if (!housing.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.housing.update(housing.id, housing);
+      await housingService.upsert(currentClient.id, housing);
     } finally {
       setSaving(false);
     }
@@ -91,14 +94,16 @@ export default function Housing() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Wohnen</h2>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -117,6 +122,7 @@ export default function Housing() {
                 type="checkbox"
                 checked={housing.isRenter}
                 onChange={(e) => updateHousing({ isRenter: e.target.checked })}
+                disabled={isReadOnly}
                 className="w-5 h-5 text-primary-600 border-gray-300 rounded"
               />
               <span className="font-medium text-gray-700">Mieter</span>
@@ -135,6 +141,7 @@ export default function Housing() {
                       onChange={(e) =>
                         updateHousing({ monthlyRent: parseFloat(e.target.value) || undefined })
                       }
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
@@ -148,6 +155,7 @@ export default function Housing() {
                       onChange={(e) =>
                         updateHousing({ additionalCosts: parseFloat(e.target.value) || undefined })
                       }
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
@@ -158,6 +166,7 @@ export default function Housing() {
                     type="checkbox"
                     checked={housing.seekingRentReduction}
                     onChange={(e) => updateHousing({ seekingRentReduction: e.target.checked })}
+                    disabled={isReadOnly}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                   />
                   <span className="text-sm text-gray-700">Mietsenkung veranlassen</span>
@@ -196,6 +205,7 @@ export default function Housing() {
                 type="checkbox"
                 checked={housing.isOwner}
                 onChange={(e) => updateHousing({ isOwner: e.target.checked })}
+                disabled={isReadOnly}
                 className="w-5 h-5 text-primary-600 border-gray-300 rounded"
               />
               <span className="font-medium text-gray-700">Eigentümer</span>
@@ -211,6 +221,7 @@ export default function Housing() {
                     <select
                       value={housing.propertyType || ''}
                       onChange={(e) => updateHousing({ propertyType: e.target.value })}
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">Auswählen...</option>
@@ -228,6 +239,7 @@ export default function Housing() {
                       type="text"
                       value={housing.acquiredDate || ''}
                       onChange={(e) => updateHousing({ acquiredDate: e.target.value })}
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       placeholder="z.B. 2020"
                     />
@@ -242,6 +254,7 @@ export default function Housing() {
                       onChange={(e) =>
                         updateHousing({ purchasePrice: parseFloat(e.target.value) || undefined })
                       }
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
@@ -255,6 +268,7 @@ export default function Housing() {
                       onChange={(e) =>
                         updateHousing({ taxValue: parseFloat(e.target.value) || undefined })
                       }
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
@@ -268,6 +282,7 @@ export default function Housing() {
                       onChange={(e) =>
                         updateHousing({ imputedRentalValue: parseFloat(e.target.value) || undefined })
                       }
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
@@ -281,6 +296,7 @@ export default function Housing() {
                       onChange={(e) =>
                         updateHousing({ utilityCosts: parseFloat(e.target.value) || undefined })
                       }
+                      disabled={isReadOnly}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
@@ -293,6 +309,7 @@ export default function Housing() {
                   <textarea
                     value={housing.renovationPlans || ''}
                     onChange={(e) => updateHousing({ renovationPlans: e.target.value })}
+                    disabled={isReadOnly}
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="z.B. Küche 2025, Dach 2027..."
@@ -321,6 +338,7 @@ export default function Housing() {
                   type="checkbox"
                   checked={housing.hasMortgage}
                   onChange={(e) => updateHousing({ hasMortgage: e.target.checked })}
+                  disabled={isReadOnly}
                   className="w-5 h-5 text-primary-600 border-gray-300 rounded"
                 />
                 <span className="font-medium text-gray-700">Hypothekarvertrag</span>
@@ -339,6 +357,7 @@ export default function Housing() {
                         onChange={(e) =>
                           updateHousing({ debt: parseFloat(e.target.value) || undefined })
                         }
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -350,6 +369,7 @@ export default function Housing() {
                         type="text"
                         value={housing.mortgageBank || ''}
                         onChange={(e) => updateHousing({ mortgageBank: e.target.value })}
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -358,6 +378,7 @@ export default function Housing() {
                       <select
                         value={housing.mortgageType || ''}
                         onChange={(e) => updateHousing({ mortgageType: e.target.value })}
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">Auswählen...</option>
@@ -377,6 +398,7 @@ export default function Housing() {
                         onChange={(e) =>
                           updateHousing({ mortgageAmount: parseFloat(e.target.value) || undefined })
                         }
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -386,6 +408,7 @@ export default function Housing() {
                         type="text"
                         value={housing.mortgageExpiry || ''}
                         onChange={(e) => updateHousing({ mortgageExpiry: e.target.value })}
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         placeholder="z.B. 31.12.2028"
                       />
@@ -399,6 +422,7 @@ export default function Housing() {
                         onChange={(e) =>
                           updateHousing({ interestRate: parseFloat(e.target.value) || undefined })
                         }
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -416,6 +440,7 @@ export default function Housing() {
                           onChange={(e) =>
                             updateHousing({ amortizationDirect: e.target.checked })
                           }
+                          disabled={isReadOnly}
                           className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                         />
                         <span className="text-sm text-gray-700">Direkt</span>
@@ -427,6 +452,7 @@ export default function Housing() {
                           onChange={(e) =>
                             updateHousing({ amortizationIndirect: e.target.checked })
                           }
+                          disabled={isReadOnly}
                           className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                         />
                         <span className="text-sm text-gray-700">Indirekt (3a)</span>
@@ -447,6 +473,7 @@ export default function Housing() {
                             amortizationAmount: parseFloat(e.target.value) || undefined,
                           })
                         }
+                        disabled={isReadOnly}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
@@ -558,6 +585,7 @@ export default function Housing() {
                 type="text"
                 value={housing.homeOwnershipGoal || ''}
                 onChange={(e) => updateHousing({ homeOwnershipGoal: e.target.value })}
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="z.B. Eigentumswohnung kaufen"
               />
@@ -568,6 +596,7 @@ export default function Housing() {
                 type="text"
                 value={housing.targetDate || ''}
                 onChange={(e) => updateHousing({ targetDate: e.target.value })}
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="z.B. 2027"
               />
@@ -582,6 +611,7 @@ export default function Housing() {
                 onChange={(e) =>
                   updateHousing({ targetPrice: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>

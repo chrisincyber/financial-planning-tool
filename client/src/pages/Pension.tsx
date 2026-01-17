@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreatePension } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { pensionService } from '../services/data.service';
 import { Save, PiggyBank, Shield, Sunset } from 'lucide-react';
 import type { Pension as PensionType } from '../types';
 import {
@@ -17,12 +18,14 @@ const COLORS = ['#0d9488', '#6366f1', '#f59e0b'];
 
 export default function Pension() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [data, setData] = useState<PensionType | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentClient?.id) {
-      getOrCreatePension(currentClient.id).then(setData);
+      pensionService.getByClientId(currentClient.id).then(setData);
     }
   }, [currentClient]);
 
@@ -39,10 +42,10 @@ export default function Pension() {
   }
 
   const handleSave = async () => {
-    if (!data.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.pension.update(data.id, data);
+      await pensionService.upsert(currentClient.id, data);
     } finally {
       setSaving(false);
     }
@@ -133,14 +136,16 @@ export default function Pension() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Vorsorge</h2>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       {/* Age Summary */}
@@ -213,6 +218,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ pillar1AverageIncomeMan: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -225,6 +231,7 @@ export default function Pension() {
                         pillar1AverageIncomeWoman: parseFloat(e.target.value) || undefined,
                       })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -238,6 +245,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ pillar2AmountMan: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -248,6 +256,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ pillar2AmountWoman: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -261,6 +270,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ disabilityNeedMan: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -271,6 +281,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ disabilityNeedWoman: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -284,6 +295,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ deathNeedMan: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -294,6 +306,7 @@ export default function Pension() {
                     onChange={(e) =>
                       update({ deathNeedWoman: parseFloat(e.target.value) || undefined })
                     }
+                    disabled={isReadOnly}
                     className="w-full px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
                   />
                 </td>
@@ -325,6 +338,7 @@ export default function Pension() {
                   onChange={(e) =>
                     update({ targetRetirementAgeMan: parseInt(e.target.value) || undefined })
                   }
+                  disabled={isReadOnly}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="65"
                 />
@@ -339,6 +353,7 @@ export default function Pension() {
                   onChange={(e) =>
                     update({ targetRetirementAgeWoman: parseInt(e.target.value) || undefined })
                   }
+                  disabled={isReadOnly}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="64"
                 />
@@ -353,6 +368,7 @@ export default function Pension() {
                   onChange={(e) =>
                     update({ retirementNeedMan: parseFloat(e.target.value) || undefined })
                   }
+                  disabled={isReadOnly}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -366,6 +382,7 @@ export default function Pension() {
                   onChange={(e) =>
                     update({ retirementNeedWoman: parseFloat(e.target.value) || undefined })
                   }
+                  disabled={isReadOnly}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -405,6 +422,7 @@ export default function Pension() {
               type="checkbox"
               checked={data.orderIKStatement}
               onChange={(e) => update({ orderIKStatement: e.target.checked })}
+              disabled={isReadOnly}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-gray-700">IK bestellen</span>
@@ -414,6 +432,7 @@ export default function Pension() {
               type="checkbox"
               checked={data.reviewPensionFund}
               onChange={(e) => update({ reviewPensionFund: e.target.checked })}
+              disabled={isReadOnly}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-gray-700">PK überprüfen</span>
@@ -423,6 +442,7 @@ export default function Pension() {
               type="checkbox"
               checked={data.review3a}
               onChange={(e) => update({ review3a: e.target.checked })}
+              disabled={isReadOnly}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-gray-700">3a überprüfen</span>
@@ -432,6 +452,7 @@ export default function Pension() {
               type="checkbox"
               checked={data.review3b}
               onChange={(e) => update({ review3b: e.target.checked })}
+              disabled={isReadOnly}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-gray-700">3b überprüfen</span>

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Client } from '../types';
-import { getAllClients, getClient } from '../db';
+import { clientsService } from '../services/clients.service';
+import { useAuth } from './AuthContext';
 
 interface ClientContextType {
   clients: Client[];
   currentClient: Client | null;
-  setCurrentClientId: (id: number | null) => void;
+  setCurrentClientId: (id: string | null) => void;
   refreshClients: () => Promise<void>;
   loading: boolean;
 }
@@ -13,24 +14,48 @@ interface ClientContextType {
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
+  const { user, profile, isAdvisor } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
-  const [currentClientId, setCurrentClientId] = useState<number | null>(null);
+  const [currentClientId, setCurrentClientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshClients = async () => {
-    const allClients = await getAllClients();
-    setClients(allClients);
+    if (!user) {
+      setClients([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const allClients = await clientsService.getAll();
+      setClients(allClients);
+
+      // For client users (non-advisors), auto-select their linked client
+      if (!isAdvisor && allClients.length === 1) {
+        setCurrentClientId(allClients[0].id!);
+      }
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    refreshClients().then(() => setLoading(false));
-  }, []);
+    if (user) {
+      refreshClients();
+    } else {
+      setClients([]);
+      setCurrentClient(null);
+      setLoading(false);
+    }
+  }, [user, profile]);
 
   useEffect(() => {
     if (currentClientId) {
-      getClient(currentClientId).then((client) => {
-        setCurrentClient(client || null);
+      clientsService.getById(currentClientId).then((client) => {
+        setCurrentClient(client);
       });
     } else {
       setCurrentClient(null);

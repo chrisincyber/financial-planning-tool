@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createClient } from '../db';
+import { clientsService } from '../services/clients.service';
 import { useClients } from '../context/ClientContext';
+import { useAuth } from '../context/AuthContext';
 import { Save, ArrowLeft } from 'lucide-react';
 
 export default function NewClient() {
   const navigate = useNavigate();
   const { refreshClients, setCurrentClientId } = useClients();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -39,7 +41,8 @@ export default function NewClient() {
 
     setSaving(true);
     try {
-      const clientId = await createClient(formData);
+      if (!user) throw new Error('Not authenticated');
+      const clientId = await clientsService.create(formData, user.id);
       await refreshClients();
       setCurrentClientId(clientId);
       navigate('/dashboard');

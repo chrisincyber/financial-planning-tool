@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreateLegalSecurity } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { legalSecurityService } from '../services/data.service';
 import { Save, Scale, FileText, Users, Heart, Briefcase } from 'lucide-react';
 import type { LegalSecurity as LegalSecurityType } from '../types';
 
@@ -51,12 +52,14 @@ const legalDocuments = [
 
 export default function LegalSecurity() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [data, setData] = useState<LegalSecurityType | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentClient?.id) {
-      getOrCreateLegalSecurity(currentClient.id).then(setData);
+      legalSecurityService.getByClientId(currentClient.id).then(setData);
     }
   }, [currentClient]);
 
@@ -73,10 +76,10 @@ export default function LegalSecurity() {
   }
 
   const handleSave = async () => {
-    if (!data.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.legalSecurity.update(data.id, data);
+      await legalSecurityService.upsert(currentClient.id, data);
     } finally {
       setSaving(false);
     }
@@ -104,14 +107,16 @@ export default function LegalSecurity() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       {/* Progress Bar */}
@@ -140,6 +145,7 @@ export default function LegalSecurity() {
             <button
               key={doc.key}
               onClick={() => update({ [doc.key]: !isCompleted })}
+              disabled={isReadOnly}
               className={`p-4 rounded-xl border-2 text-left transition-all ${
                 isCompleted
                   ? 'border-primary-500 bg-primary-50'
@@ -204,6 +210,7 @@ export default function LegalSecurity() {
             type="checkbox"
             checked={data.wantsServicePackage}
             onChange={(e) => update({ wantsServicePackage: e.target.checked })}
+            disabled={isReadOnly}
             className="w-5 h-5 text-primary-600 border-gray-300 rounded"
           />
           <div>
@@ -221,6 +228,7 @@ export default function LegalSecurity() {
         <textarea
           value={data.legalGoals || ''}
           onChange={(e) => update({ legalGoals: e.target.value })}
+          disabled={isReadOnly}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           placeholder="Ziele und Notizen zur rechtlichen Absicherung..."

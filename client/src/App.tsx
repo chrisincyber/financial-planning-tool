@@ -1,6 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { ClientProvider } from './context/ClientContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+
+// Auth pages
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import AcceptInvitation from './pages/auth/AcceptInvitation';
+
+// App pages
 import Dashboard from './pages/Dashboard';
 import PersonalInfo from './pages/PersonalInfo';
 import Goals from './pages/Goals';
@@ -16,27 +25,56 @@ import NewClient from './pages/NewClient';
 
 function App() {
   return (
-    <ClientProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="clients/new" element={<NewClient />} />
-            <Route path="personal" element={<PersonalInfo />} />
-            <Route path="goals" element={<Goals />} />
-            <Route path="housing" element={<Housing />} />
-            <Route path="property-insurance" element={<PropertyInsurance />} />
-            <Route path="health-insurance" element={<HealthInsurance />} />
-            <Route path="legal" element={<LegalSecurity />} />
-            <Route path="tax" element={<TaxOptimization />} />
-            <Route path="investment" element={<Investment />} />
-            <Route path="pension" element={<Pension />} />
-            <Route path="budget" element={<Budget />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </ClientProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <ClientProvider>
+          <Routes>
+            {/* Public auth routes */}
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/accept-invitation" element={<AcceptInvitation />} />
+
+            {/* Protected app routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+
+              {/* Advisor-only routes */}
+              <Route
+                path="clients/new"
+                element={
+                  <ProtectedRoute requireAdvisor>
+                    <NewClient />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Client data routes */}
+              <Route path="personal" element={<PersonalInfo />} />
+              <Route path="goals" element={<Goals />} />
+              <Route path="housing" element={<Housing />} />
+              <Route path="property-insurance" element={<PropertyInsurance />} />
+              <Route path="health-insurance" element={<HealthInsurance />} />
+              <Route path="legal" element={<LegalSecurity />} />
+              <Route path="tax" element={<TaxOptimization />} />
+              <Route path="investment" element={<Investment />} />
+              <Route path="pension" element={<Pension />} />
+              <Route path="budget" element={<Budget />} />
+            </Route>
+
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </ClientProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

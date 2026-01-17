@@ -1,6 +1,6 @@
 // Client/Personal Information
 export interface Client {
-  id?: number;
+  id?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -36,8 +36,8 @@ export interface Client {
 
 // Goals with Timeline
 export interface Goal {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
   description: string;
   targetYear: number; // 1, 2, 3, 5, 10, 20
   estimatedCost?: number;
@@ -47,8 +47,8 @@ export interface Goal {
 
 // Intended Measures (Beabsichtigte Massnahmen)
 export interface PlannedAction {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
   forMan: boolean;
   forWoman: boolean;
   priority: number;
@@ -61,8 +61,8 @@ export interface PlannedAction {
 
 // Housing (Wohnen)
 export interface Housing {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // Rental
   isRenter: boolean;
@@ -102,8 +102,8 @@ export interface Housing {
 
 // Property Insurance (Sachversicherung)
 export interface PropertyInsurance {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // PHP - Privathaftpflicht
   hasPrivateLiability: boolean;
@@ -130,8 +130,8 @@ export interface PropertyInsurance {
 
 // Health Insurance (Gesundheitsvorsorge)
 export interface HealthInsurance {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // KVG - Grundversicherung
   kvgProviderMan?: string;
@@ -182,8 +182,8 @@ export interface HealthInsurance {
 
 // Legal Security (Rechtssicherheit)
 export interface LegalSecurity {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   hasAdvanceDirective: boolean; // Vorsorgeauftrag
   hasPatientDecree: boolean; // Patientenverfügung
@@ -199,8 +199,8 @@ export interface LegalSecurity {
 
 // Tax Optimization (Steueroptimierung)
 export interface TaxOptimization {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   receivedTaxStatement: boolean; // STEK erhalten
   wantsServicePackage: boolean;
@@ -221,8 +221,8 @@ export interface TaxOptimization {
 
 // Investment
 export interface Investment {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // Income (Einnahmen)
   incomeMan?: number;
@@ -245,8 +245,8 @@ export interface Investment {
 
 // Pension/Retirement (Vorsorge)
 export interface Pension {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // Disability/Death Insurance (Absicherung IV/Tod)
   pillar1AverageIncomeMan?: number;
@@ -275,8 +275,8 @@ export interface Pension {
 
 // Budget
 export interface Budget {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // Expenses (monthly)
   taxesMan?: number;
@@ -311,8 +311,8 @@ export interface Budget {
 
 // Follow-up and Interests
 export interface ClientPreferences {
-  id?: number;
-  clientId: number;
+  id?: string;
+  clientId: string;
 
   // Follow-up appointment
   followUpDate?: string;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreateTaxOptimization } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { taxOptimizationService } from '../services/data.service';
 import { Save, Receipt, Calculator } from 'lucide-react';
 import type { TaxOptimization as TaxOptimizationType } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -21,12 +22,14 @@ const calculateTax = (income: number): number => {
 
 export default function TaxOptimization() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [data, setData] = useState<TaxOptimizationType | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentClient?.id) {
-      getOrCreateTaxOptimization(currentClient.id).then(setData);
+      taxOptimizationService.getByClientId(currentClient.id).then(setData);
     }
   }, [currentClient]);
 
@@ -43,10 +46,10 @@ export default function TaxOptimization() {
   }
 
   const handleSave = async () => {
-    if (!data.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.taxOptimization.update(data.id, data);
+      await taxOptimizationService.upsert(currentClient.id, data);
     } finally {
       setSaving(false);
     }
@@ -101,14 +104,16 @@ export default function TaxOptimization() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Steueroptimierung</h2>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       {/* Status */}
@@ -119,6 +124,7 @@ export default function TaxOptimization() {
               type="checkbox"
               checked={data.receivedTaxStatement}
               onChange={(e) => update({ receivedTaxStatement: e.target.checked })}
+              disabled={isReadOnly}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded"
             />
             <span className="font-medium text-gray-700">STEK erhalten</span>
@@ -128,6 +134,7 @@ export default function TaxOptimization() {
               type="checkbox"
               checked={data.wantsServicePackage}
               onChange={(e) => update({ wantsServicePackage: e.target.checked })}
+              disabled={isReadOnly}
               className="w-5 h-5 text-primary-600 border-gray-300 rounded"
             />
             <span className="font-medium text-gray-700">Servicepaket erwünscht</span>
@@ -150,6 +157,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ taxableIncomeMan: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -163,6 +171,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ taxableIncomeWoman: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -176,6 +185,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ currentTaxBurden: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -197,6 +207,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ pillar3aContributionMan: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 max={max3aSelfEmployed}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
@@ -212,6 +223,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ pillar3aContributionWoman: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 max={max3aSelfEmployed}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
@@ -226,6 +238,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ pensionFundPurchase: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -239,6 +252,7 @@ export default function TaxOptimization() {
                 onChange={(e) =>
                   update({ otherDeductions: parseFloat(e.target.value) || undefined })
                 }
+                disabled={isReadOnly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -333,6 +347,7 @@ export default function TaxOptimization() {
         <textarea
           value={data.taxGoals || ''}
           onChange={(e) => update({ taxGoals: e.target.value })}
+          disabled={isReadOnly}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           placeholder="Ziele und Massnahmen zur Steueroptimierung..."
