@@ -14,10 +14,20 @@ export default function Housing() {
   const isReadOnly = !isAdvisor;
   const [housing, setHousing] = useState<HousingType | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentClient?.id) {
-      housingService.getByClientId(currentClient.id).then(setHousing);
+      setLoading(true);
+      setError(null);
+      housingService.getByClientId(currentClient.id)
+        .then(setHousing)
+        .catch((err) => {
+          console.error('Error loading housing:', err);
+          setError(err.message || 'Fehler beim Laden der Daten');
+        })
+        .finally(() => setLoading(false));
     }
   }, [currentClient]);
 
@@ -29,8 +39,21 @@ export default function Housing() {
     );
   }
 
-  if (!housing) {
+  if (loading) {
     return <div className="text-center py-12">Laden...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Fehler: {error}</p>
+        <p className="text-sm text-gray-500 mt-2">Bitte überprüfen Sie die Supabase-Konfiguration.</p>
+      </div>
+    );
+  }
+
+  if (!housing) {
+    return <div className="text-center py-12">Keine Daten gefunden.</div>;
   }
 
   const handleSave = async () => {

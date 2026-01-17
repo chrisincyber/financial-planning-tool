@@ -56,10 +56,20 @@ export default function LegalSecurity() {
   const isReadOnly = !isAdvisor;
   const [data, setData] = useState<LegalSecurityType | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentClient?.id) {
-      legalSecurityService.getByClientId(currentClient.id).then(setData);
+      setLoading(true);
+      setError(null);
+      legalSecurityService.getByClientId(currentClient.id)
+        .then(setData)
+        .catch((err) => {
+          console.error('Error loading legal security:', err);
+          setError(err.message || 'Fehler beim Laden der Daten');
+        })
+        .finally(() => setLoading(false));
     }
   }, [currentClient]);
 
@@ -71,8 +81,21 @@ export default function LegalSecurity() {
     );
   }
 
-  if (!data) {
+  if (loading) {
     return <div className="text-center py-12">Laden...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">Fehler: {error}</p>
+        <p className="text-sm text-gray-500 mt-2">Bitte überprüfen Sie die Supabase-Konfiguration.</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div className="text-center py-12">Keine Daten gefunden.</div>;
   }
 
   const handleSave = async () => {

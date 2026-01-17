@@ -120,31 +120,37 @@ export const plannedActionsService = {
 // Generic single-record service factory
 function createSingleRecordService<T extends { id?: string; clientId: string }>(tableName: string) {
   return {
-    async getByClientId(clientId: string): Promise<T | null> {
+    async getByClientId(clientId: string): Promise<T> {
+      // First try to get existing record
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
         .eq('client_id', clientId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No record exists - create one with default values
-          const { data: newData, error: insertError } = await supabase
-            .from(tableName)
-            .insert({ client_id: clientId })
-            .select('*')
-            .single();
-
-          if (insertError) {
-            console.error(`Error creating ${tableName}:`, insertError);
-            return null;
-          }
-          return mapFromDb<T>(newData);
-        }
+        console.error(`Error fetching ${tableName}:`, error);
         throw error;
       }
-      return mapFromDb<T>(data);
+
+      // If record exists, return it
+      if (data) {
+        return mapFromDb<T>(data);
+      }
+
+      // No record exists - create one with default values
+      const { data: newData, error: insertError } = await supabase
+        .from(tableName)
+        .insert({ client_id: clientId })
+        .select('*')
+        .single();
+
+      if (insertError) {
+        console.error(`Error creating ${tableName}:`, insertError);
+        throw insertError;
+      }
+
+      return mapFromDb<T>(newData);
     },
 
     async upsert(clientId: string, record: Partial<T>): Promise<void> {
@@ -153,7 +159,7 @@ function createSingleRecordService<T extends { id?: string; clientId: string }>(
         .from(tableName)
         .select('id')
         .eq('client_id', clientId)
-        .single();
+        .maybeSingle();
 
       const dbRecord = mapToDb({ ...record, clientId } as unknown as Record<string, unknown>);
 
