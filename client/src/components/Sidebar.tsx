@@ -16,6 +16,7 @@ import {
   Plus,
   LogOut,
   User,
+  Landmark,
 } from 'lucide-react';
 import { useClients } from '../context/ClientContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Persönliche Daten', href: '/personal', icon: Users },
   { name: 'Ziele & Planung', href: '/goals', icon: Target },
+  { name: 'Vermögen', href: '/assets', icon: Landmark },
   { name: 'Wohnen', href: '/housing', icon: Building2 },
   { name: 'Sachversicherung', href: '/property-insurance', icon: Shield },
   { name: 'Krankenversicherung', href: '/health-insurance', icon: Heart },

@@ -16,6 +16,20 @@ export interface Client {
   phone?: string;
   email?: string;
 
+  // Employment
+  occupationMan?: string;
+  occupationWoman?: string;
+  employerMan?: string;
+  employerWoman?: string;
+  employmentRateMan?: number; // percentage
+  employmentRateWoman?: number;
+
+  // Marital Status
+  maritalStatus?: 'single' | 'married' | 'registered_partnership' | 'divorced' | 'widowed';
+  hasChildren?: boolean;
+  numberOfChildren?: number;
+  childrenAges?: string;
+
   // Planning Goals (Optimierung)
   avoidDoubleInsurance: boolean;
   closeCoverageGaps: boolean;
@@ -31,6 +45,298 @@ export interface Client {
   homeOwnership: boolean;
 
   // Notes
+  notes?: string;
+}
+
+// ============================================
+// ASSET MANAGEMENT (Vermögensübersicht)
+// ============================================
+
+// Bank Account
+export interface BankAccount {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman' | 'joint';
+  bankName: string;
+  accountType: 'checking' | 'savings' | 'salary' | 'other';
+  iban?: string;
+  balance: number;
+  interestRate?: number;
+  notes?: string;
+}
+
+// Securities/Investments
+export interface SecurityHolding {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman' | 'joint';
+  custodianBank: string;
+  investmentType: 'stocks' | 'bonds' | 'funds' | 'etf' | 'structured' | 'crypto' | 'other';
+  description: string;
+  quantity?: number;
+  purchasePrice?: number;
+  currentValue: number;
+  purchaseDate?: string;
+  currency: string;
+  notes?: string;
+}
+
+// Real Estate
+export interface RealEstate {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman' | 'joint';
+  propertyType: 'house' | 'apartment' | 'land' | 'commercial' | 'vacation' | 'other';
+  address: string;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  currentValue: number;
+  taxValue?: number;
+  imputedRentalValue?: number;
+  rentalIncome?: number;
+  isOwnResidence: boolean;
+  notes?: string;
+}
+
+// Other Assets (vehicles, valuables, etc.)
+export interface OtherAsset {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman' | 'joint';
+  assetType: 'vehicle' | 'art' | 'jewelry' | 'collectibles' | 'business' | 'loan_receivable' | 'other';
+  description: string;
+  purchaseDate?: string;
+  purchasePrice?: number;
+  currentValue: number;
+  notes?: string;
+}
+
+// Liabilities
+export interface Liability {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman' | 'joint';
+  liabilityType: 'mortgage' | 'personal_loan' | 'car_loan' | 'credit_card' | 'student_loan' | 'business_loan' | 'other';
+  creditor: string;
+  originalAmount: number;
+  currentBalance: number;
+  interestRate: number;
+  monthlyPayment?: number;
+  startDate?: string;
+  endDate?: string;
+  linkedAssetId?: string; // for mortgages linked to real estate
+  notes?: string;
+}
+
+// ============================================
+// DETAILED PENSION SYSTEM (3-Säulen-System)
+// ============================================
+
+// 1st Pillar - AHV/IV
+export interface Pillar1 {
+  id?: string;
+  clientId: string;
+
+  // Man
+  contributionYearsMan?: number;
+  averageIncomeMan?: number;
+  expectedAhvPensionMan?: number;
+  hasContributionGapsMan?: boolean;
+  gapYearsMan?: string;
+
+  // Woman
+  contributionYearsWoman?: number;
+  averageIncomeWoman?: number;
+  expectedAhvPensionWoman?: number;
+  hasContributionGapsWoman?: boolean;
+  gapYearsWoman?: string;
+
+  // IK Statement
+  orderedIKStatementMan?: boolean;
+  orderedIKStatementWoman?: boolean;
+  ikStatementDateMan?: string;
+  ikStatementDateWoman?: string;
+
+  notes?: string;
+}
+
+// 2nd Pillar - BVG/Pensionskasse
+export interface Pillar2 {
+  id?: string;
+  clientId: string;
+
+  // Man
+  pensionFundMan?: string;
+  insuredSalaryMan?: number;
+  currentBalanceMan?: number;
+  projectedPensionMan?: number;
+  projectedCapitalMan?: number;
+  conversionRateMan?: number;
+  maxVoluntaryPurchaseMan?: number;
+  disabilityPensionMan?: number;
+  spousePensionMan?: number;
+  childPensionMan?: number;
+  deathCapitalMan?: number;
+  earlyRetirementPossibleMan?: boolean;
+  earliestRetirementAgeMan?: number;
+
+  // Woman
+  pensionFundWoman?: string;
+  insuredSalaryWoman?: number;
+  currentBalanceWoman?: number;
+  projectedPensionWoman?: number;
+  projectedCapitalWoman?: number;
+  conversionRateWoman?: number;
+  maxVoluntaryPurchaseWoman?: number;
+  disabilityPensionWoman?: number;
+  spousePensionWoman?: number;
+  childPensionWoman?: number;
+  deathCapitalWoman?: number;
+  earlyRetirementPossibleWoman?: boolean;
+  earliestRetirementAgeWoman?: number;
+
+  // Documents
+  receivedPensionStatementMan?: boolean;
+  receivedPensionStatementWoman?: boolean;
+  statementDateMan?: string;
+  statementDateWoman?: string;
+
+  notes?: string;
+}
+
+// 3rd Pillar - 3a/3b
+export interface Pillar3Account {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman';
+  pillarType: '3a' | '3b';
+  provider: string;
+  productType: 'bank_account' | 'insurance' | 'fund' | 'etf';
+  accountNumber?: string;
+  startDate?: string;
+  currentValue: number;
+  yearlyContribution?: number;
+  interestRate?: number;
+  investmentStrategy?: string;
+  beneficiaries?: string;
+  notes?: string;
+}
+
+// ============================================
+// RISK PROFILE
+// ============================================
+
+export interface RiskProfile {
+  id?: string;
+  clientId: string;
+
+  // Investment Experience
+  investmentExperienceYears?: number;
+  hasStockExperience?: boolean;
+  hasBondExperience?: boolean;
+  hasFundExperience?: boolean;
+  hasDerivativeExperience?: boolean;
+
+  // Risk Tolerance Questions
+  reactionToLoss?: 'sell_all' | 'sell_some' | 'hold' | 'buy_more';
+  investmentHorizon?: 'short' | 'medium' | 'long' | 'very_long';
+  incomeStability?: 'very_stable' | 'stable' | 'variable' | 'uncertain';
+  liquidityNeeds?: 'high' | 'medium' | 'low';
+  maxAcceptableLoss?: number; // percentage
+
+  // Calculated Profile
+  riskScore?: number; // 1-10
+  riskCategory?: 'conservative' | 'moderate_conservative' | 'balanced' | 'moderate_aggressive' | 'aggressive';
+  recommendedStockAllocation?: number;
+  recommendedBondAllocation?: number;
+  recommendedCashAllocation?: number;
+
+  assessmentDate?: string;
+  notes?: string;
+}
+
+// ============================================
+// LIFE INSURANCE (Lebensversicherung)
+// ============================================
+
+export interface LifeInsurance {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman';
+  insuranceType: 'term_life' | 'whole_life' | 'endowment' | 'disability' | 'combined';
+  provider: string;
+  policyNumber?: string;
+  startDate?: string;
+  endDate?: string;
+  premium: number;
+  premiumFrequency: 'monthly' | 'quarterly' | 'yearly';
+  sumInsuredDeath?: number;
+  sumInsuredDisability?: number;
+  currentSurrenderValue?: number;
+  beneficiaries?: string;
+  isPledged?: boolean;
+  pledgedTo?: string;
+  notes?: string;
+}
+
+// ============================================
+// INCOME DETAILS
+// ============================================
+
+export interface IncomeDetail {
+  id?: string;
+  clientId: string;
+  owner: 'man' | 'woman' | 'joint';
+  incomeType: 'salary' | 'bonus' | 'self_employment' | 'rental' | 'dividends' | 'interest' | 'pension' | 'alimony' | 'child_support' | 'other';
+  description: string;
+  amount: number;
+  frequency: 'monthly' | 'quarterly' | 'yearly' | 'one_time';
+  isTaxable: boolean;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+}
+
+// ============================================
+// TAX DETAILS (expanded)
+// ============================================
+
+export interface TaxDetail {
+  id?: string;
+  clientId: string;
+  taxYear: number;
+  canton: string;
+  municipality: string;
+
+  // Income
+  grossIncomeMan?: number;
+  grossIncomeWoman?: number;
+  netIncomeMan?: number;
+  netIncomeWoman?: number;
+
+  // Deductions
+  pillar2PurchaseMan?: number;
+  pillar2PurchaseWoman?: number;
+  pillar3aContributionMan?: number;
+  pillar3aContributionWoman?: number;
+  mortgageInterest?: number;
+  maintenanceCosts?: number;
+  childDeductions?: number;
+  insurancePremiums?: number;
+  professionalExpenses?: number;
+  otherDeductions?: number;
+
+  // Wealth
+  totalWealth?: number;
+  wealthTax?: number;
+
+  // Results
+  taxableIncome?: number;
+  incomeTaxFederal?: number;
+  incomeTaxCantonal?: number;
+  incomeTaxMunicipal?: number;
+  totalTaxBurden?: number;
+
   notes?: string;
 }
 

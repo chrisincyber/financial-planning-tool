@@ -23,6 +23,7 @@ import Investment from './pages/Investment';
 import Pension from './pages/Pension';
 import Budget from './pages/Budget';
 import NewClient from './pages/NewClient';
+import Assets from './pages/Assets';
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
               {/* Client data routes */}
               <Route path="personal" element={<PersonalInfo />} />
               <Route path="goals" element={<Goals />} />
+              <Route path="assets" element={<Assets />} />
               <Route path="housing" element={<Housing />} />
               <Route path="property-insurance" element={<PropertyInsurance />} />
               <Route path="health-insurance" element={<HealthInsurance />} />
