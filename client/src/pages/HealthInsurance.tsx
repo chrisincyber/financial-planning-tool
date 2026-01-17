@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getOrCreateHealthInsurance } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { healthInsuranceService } from '../services/data.service';
 import { Save, Heart } from 'lucide-react';
 import type { HealthInsurance as HealthInsuranceType } from '../types';
 
 export default function HealthInsurance() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
+  const isReadOnly = !isAdvisor;
   const [data, setData] = useState<HealthInsuranceType | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (currentClient?.id) {
-      getOrCreateHealthInsurance(currentClient.id).then(setData);
+      healthInsuranceService.getByClientId(currentClient.id).then(setData);
     }
   }, [currentClient]);
 
@@ -28,10 +31,10 @@ export default function HealthInsurance() {
   }
 
   const handleSave = async () => {
-    if (!data.id) return;
+    if (!currentClient?.id) return;
     setSaving(true);
     try {
-      await db.healthInsurance.update(data.id, data);
+      await healthInsuranceService.upsert(currentClient.id, data);
     } finally {
       setSaving(false);
     }
@@ -50,14 +53,16 @@ export default function HealthInsurance() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Gesundheitsvorsorge</h2>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
-          <Save className="w-4 h-4" />
-          {saving ? 'Speichern...' : 'Speichern'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </button>
+        )}
       </div>
 
       {/* Insurance Providers */}
@@ -86,6 +91,7 @@ export default function HealthInsurance() {
                     type="text"
                     value={data.kvgProviderMan || ''}
                     onChange={(e) => update({ kvgProviderMan: e.target.value })}
+                    disabled={isReadOnly}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="Versicherung"
                   />
@@ -95,6 +101,7 @@ export default function HealthInsurance() {
                     type="text"
                     value={data.kvgProviderWoman || ''}
                     onChange={(e) => update({ kvgProviderWoman: e.target.value })}
+                    disabled={isReadOnly}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="Versicherung"
                   />
@@ -112,6 +119,7 @@ export default function HealthInsurance() {
                     type="text"
                     value={data.vvgProviderMan || ''}
                     onChange={(e) => update({ vvgProviderMan: e.target.value })}
+                    disabled={isReadOnly}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="Versicherung"
                   />
@@ -121,6 +129,7 @@ export default function HealthInsurance() {
                     type="text"
                     value={data.vvgProviderWoman || ''}
                     onChange={(e) => update({ vvgProviderWoman: e.target.value })}
+                    disabled={isReadOnly}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="Versicherung"
                   />
@@ -142,6 +151,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.franchiseMan || ''}
               onChange={(e) => update({ franchiseMan: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -151,6 +161,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.franchiseWoman || ''}
               onChange={(e) => update({ franchiseWoman: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -162,6 +173,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.yearlyPremiumMan || ''}
               onChange={(e) => update({ yearlyPremiumMan: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -175,6 +187,7 @@ export default function HealthInsurance() {
               onChange={(e) =>
                 update({ yearlyPremiumWoman: parseFloat(e.target.value) || undefined })
               }
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -184,6 +197,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.ipvMan || ''}
               onChange={(e) => update({ ipvMan: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               placeholder="Prämienverbilligung"
             />
@@ -194,6 +208,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.ipvWoman || ''}
               onChange={(e) => update({ ipvWoman: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               placeholder="Prämienverbilligung"
             />
@@ -212,6 +227,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.heightMan || ''}
               onChange={(e) => update({ heightMan: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -221,6 +237,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.heightWoman || ''}
               onChange={(e) => update({ heightWoman: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -230,6 +247,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.weightMan || ''}
               onChange={(e) => update({ weightMan: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -239,6 +257,7 @@ export default function HealthInsurance() {
               type="number"
               value={data.weightWoman || ''}
               onChange={(e) => update({ weightWoman: parseFloat(e.target.value) || undefined })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -248,6 +267,7 @@ export default function HealthInsurance() {
               type="text"
               value={data.familyDoctorMan || ''}
               onChange={(e) => update({ familyDoctorMan: e.target.value })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -257,6 +277,7 @@ export default function HealthInsurance() {
               type="text"
               value={data.familyDoctorWoman || ''}
               onChange={(e) => update({ familyDoctorWoman: e.target.value })}
+              disabled={isReadOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -271,6 +292,7 @@ export default function HealthInsurance() {
                   type="checkbox"
                   checked={data.isSmokerMan}
                   onChange={(e) => update({ isSmokerMan: e.target.checked })}
+                  disabled={isReadOnly}
                   className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                 />
                 <span className="text-sm text-gray-700">m</span>
@@ -280,6 +302,7 @@ export default function HealthInsurance() {
                   type="checkbox"
                   checked={data.isSmokerWoman}
                   onChange={(e) => update({ isSmokerWoman: e.target.checked })}
+                  disabled={isReadOnly}
                   className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                 />
                 <span className="text-sm text-gray-700">w</span>
@@ -294,6 +317,7 @@ export default function HealthInsurance() {
                   type="checkbox"
                   checked={data.isHealthyMan}
                   onChange={(e) => update({ isHealthyMan: e.target.checked })}
+                  disabled={isReadOnly}
                   className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                 />
                 <span className="text-sm text-gray-700">m</span>
@@ -303,6 +327,7 @@ export default function HealthInsurance() {
                   type="checkbox"
                   checked={data.isHealthyWoman}
                   onChange={(e) => update({ isHealthyWoman: e.target.checked })}
+                  disabled={isReadOnly}
                   className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                 />
                 <span className="text-sm text-gray-700">w</span>
@@ -321,6 +346,7 @@ export default function HealthInsurance() {
               type="checkbox"
               checked={data.hadAlternativePhysio}
               onChange={(e) => update({ hadAlternativePhysio: e.target.checked })}
+              disabled={isReadOnly}
               className="w-4 h-4 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Alternativ/Physio</span>
@@ -330,6 +356,7 @@ export default function HealthInsurance() {
               type="checkbox"
               checked={data.hadAccident}
               onChange={(e) => update({ hadAccident: e.target.checked })}
+              disabled={isReadOnly}
               className="w-4 h-4 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Unfall</span>
@@ -339,6 +366,7 @@ export default function HealthInsurance() {
               type="checkbox"
               checked={data.hadIllness}
               onChange={(e) => update({ hadIllness: e.target.checked })}
+              disabled={isReadOnly}
               className="w-4 h-4 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Krankheit</span>
@@ -348,6 +376,7 @@ export default function HealthInsurance() {
               type="checkbox"
               checked={data.hadPsychologist}
               onChange={(e) => update({ hadPsychologist: e.target.checked })}
+              disabled={isReadOnly}
               className="w-4 h-4 text-primary-600 border-gray-300 rounded"
             />
             <span className="text-sm text-gray-700">Psychologe</span>
@@ -361,6 +390,7 @@ export default function HealthInsurance() {
         <textarea
           value={data.protectionGoals || ''}
           onChange={(e) => update({ protectionGoals: e.target.value })}
+          disabled={isReadOnly}
           rows={3}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           placeholder="Ziele im Bereich Gesundheitsschutz..."

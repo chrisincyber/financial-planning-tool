@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useClients } from '../context/ClientContext';
-import { db, getGoals, getPlannedActions } from '../db';
+import { useAuth } from '../context/AuthContext';
+import { goalsService, plannedActionsService } from '../services/data.service';
 import { Plus, Trash2, Target, CheckSquare } from 'lucide-react';
 import type { Goal, PlannedAction } from '../types';
 
@@ -13,9 +14,12 @@ const priorities = [
 
 export default function Goals() {
   const { currentClient } = useClients();
+  const { isAdvisor } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [actions, setActions] = useState<PlannedAction[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const isReadOnly = !isAdvisor;
 
   // New goal form
   const [newGoal, setNewGoal] = useState({
@@ -44,8 +48,8 @@ export default function Goals() {
   const loadData = async () => {
     if (!currentClient?.id) return;
     const [g, a] = await Promise.all([
-      getGoals(currentClient.id),
-      getPlannedActions(currentClient.id),
+      goalsService.getByClientId(currentClient.id),
+      plannedActionsService.getByClientId(currentClient.id),
     ]);
     setGoals(g);
     setActions(a);
@@ -60,10 +64,10 @@ export default function Goals() {
   }
 
   const addGoal = async () => {
-    if (!newGoal.description || !currentClient.id) return;
+    if (!newGoal.description || !currentClient.id || isReadOnly) return;
     setSaving(true);
     try {
-      await db.goals.add({
+      await goalsService.create({
         clientId: currentClient.id,
         description: newGoal.description,
         targetYear: newGoal.targetYear,
@@ -78,22 +82,24 @@ export default function Goals() {
     }
   };
 
-  const deleteGoal = async (id: number) => {
-    await db.goals.delete(id);
+  const deleteGoal = async (id: string) => {
+    if (isReadOnly) return;
+    await goalsService.delete(id);
     await loadData();
   };
 
-  const updateGoalStatus = async (id: number, status: Goal['status']) => {
-    await db.goals.update(id, { status });
+  const updateGoalStatus = async (id: string, status: Goal['status']) => {
+    if (isReadOnly) return;
+    await goalsService.update(id, { status });
     await loadData();
   };
 
   const addAction = async () => {
-    if (!newAction.goal || !newAction.action || !currentClient.id) return;
+    if (!newAction.goal || !newAction.action || !currentClient.id || isReadOnly) return;
     setSaving(true);
     try {
       const maxPriority = actions.length > 0 ? Math.max(...actions.map((a) => a.priority)) : 0;
-      await db.plannedActions.add({
+      await plannedActionsService.create({
         clientId: currentClient.id,
         forMan: newAction.forMan,
         forWoman: newAction.forWoman,
@@ -118,13 +124,15 @@ export default function Goals() {
     }
   };
 
-  const deleteAction = async (id: number) => {
-    await db.plannedActions.delete(id);
+  const deleteAction = async (id: string) => {
+    if (isReadOnly) return;
+    await plannedActionsService.delete(id);
     await loadData();
   };
 
-  const updateActionStatus = async (id: number, status: PlannedAction['status']) => {
-    await db.plannedActions.update(id, { status });
+  const updateActionStatus = async (id: string, status: PlannedAction['status']) => {
+    if (isReadOnly) return;
+    await plannedActionsService.update(id, { status });
     await loadData();
   };
 
@@ -168,26 +176,28 @@ export default function Goals() {
                           {goal.estimatedCost.toLocaleString('de-CH')} CHF
                         </div>
                       )}
-                      <div className="flex gap-1 mt-1">
-                        <button
-                          onClick={() =>
-                            updateGoalStatus(
-                              goal.id!,
-                              goal.status === 'completed' ? 'planned' : 'completed'
-                            )
-                          }
-                          className="text-green-600 hover:text-green-800"
-                          title={goal.status === 'completed' ? 'Als offen markieren' : 'Als erledigt markieren'}
-                        >
-                          <CheckSquare className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => deleteGoal(goal.id!)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
+                      {!isReadOnly && (
+                        <div className="flex gap-1 mt-1">
+                          <button
+                            onClick={() =>
+                              updateGoalStatus(
+                                goal.id!,
+                                goal.status === 'completed' ? 'planned' : 'completed'
+                              )
+                            }
+                            className="text-green-600 hover:text-green-800"
+                            title={goal.status === 'completed' ? 'Als offen markieren' : 'Als erledigt markieren'}
+                          >
+                            <CheckSquare className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => deleteGoal(goal.id!)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>
@@ -196,69 +206,71 @@ export default function Goals() {
         </div>
 
         {/* Add Goal Form */}
-        <div className="border-t border-gray-200 pt-4">
-          <h4 className="font-medium text-gray-700 mb-3">Neues Ziel hinzufügen</h4>
-          <div className="flex gap-4 items-end flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm text-gray-600 mb-1">Beschreibung</label>
-              <input
-                type="text"
-                value={newGoal.description}
-                onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                placeholder="z.B. Neues Auto, Renovation..."
-              />
-            </div>
-            <div className="w-32">
-              <label className="block text-sm text-gray-600 mb-1">Jahr</label>
-              <select
-                value={newGoal.targetYear}
-                onChange={(e) => setNewGoal({ ...newGoal, targetYear: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+        {!isReadOnly && (
+          <div className="border-t border-gray-200 pt-4">
+            <h4 className="font-medium text-gray-700 mb-3">Neues Ziel hinzufügen</h4>
+            <div className="flex gap-4 items-end flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-sm text-gray-600 mb-1">Beschreibung</label>
+                <input
+                  type="text"
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="z.B. Neues Auto, Renovation..."
+                />
+              </div>
+              <div className="w-32">
+                <label className="block text-sm text-gray-600 mb-1">Jahr</label>
+                <select
+                  value={newGoal.targetYear}
+                  onChange={(e) => setNewGoal({ ...newGoal, targetYear: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  {timelineYears.map((y) => (
+                    <option key={y} value={y}>
+                      {y} Jahr(e)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-36">
+                <label className="block text-sm text-gray-600 mb-1">Kosten (CHF)</label>
+                <input
+                  type="number"
+                  value={newGoal.estimatedCost}
+                  onChange={(e) => setNewGoal({ ...newGoal, estimatedCost: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="0"
+                />
+              </div>
+              <div className="w-32">
+                <label className="block text-sm text-gray-600 mb-1">Priorität</label>
+                <select
+                  value={newGoal.priority}
+                  onChange={(e) =>
+                    setNewGoal({ ...newGoal, priority: e.target.value as 'low' | 'medium' | 'high' })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  {priorities.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={addGoal}
+                disabled={saving || !newGoal.description}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
               >
-                {timelineYears.map((y) => (
-                  <option key={y} value={y}>
-                    {y} Jahr(e)
-                  </option>
-                ))}
-              </select>
+                <Plus className="w-4 h-4" />
+                Hinzufügen
+              </button>
             </div>
-            <div className="w-36">
-              <label className="block text-sm text-gray-600 mb-1">Kosten (CHF)</label>
-              <input
-                type="number"
-                value={newGoal.estimatedCost}
-                onChange={(e) => setNewGoal({ ...newGoal, estimatedCost: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                placeholder="0"
-              />
-            </div>
-            <div className="w-32">
-              <label className="block text-sm text-gray-600 mb-1">Priorität</label>
-              <select
-                value={newGoal.priority}
-                onChange={(e) =>
-                  setNewGoal({ ...newGoal, priority: e.target.value as 'low' | 'medium' | 'high' })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              >
-                {priorities.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={addGoal}
-              disabled={saving || !newGoal.description}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-            >
-              <Plus className="w-4 h-4" />
-              Hinzufügen
-            </button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Planned Actions */}
@@ -282,7 +294,7 @@ export default function Goals() {
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-600 w-28">Wer</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-600 w-28">Wann</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-600 w-28">Status</th>
-                <th className="w-10"></th>
+                {!isReadOnly && <th className="w-10"></th>}
               </tr>
             </thead>
             <tbody>
@@ -305,6 +317,7 @@ export default function Goals() {
                   <td className="py-2 px-2">
                     <select
                       value={action.status}
+                      disabled={isReadOnly}
                       onChange={(e) =>
                         updateActionStatus(action.id!, e.target.value as PlannedAction['status'])
                       }
@@ -314,26 +327,28 @@ export default function Goals() {
                           : action.status === 'in_progress'
                           ? 'bg-blue-100 text-blue-700'
                           : 'bg-gray-100 text-gray-700'
-                      }`}
+                      } disabled:opacity-75`}
                     >
                       <option value="pending">Ausstehend</option>
                       <option value="in_progress">In Bearbeitung</option>
                       <option value="completed">Erledigt</option>
                     </select>
                   </td>
-                  <td className="py-2 px-2">
-                    <button
-                      onClick={() => deleteAction(action.id!)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="py-2 px-2">
+                      <button
+                        onClick={() => deleteAction(action.id!)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {actions.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-500">
+                  <td colSpan={isReadOnly ? 7 : 8} className="py-8 text-center text-gray-500">
                     Noch keine Massnahmen erfasst
                   </td>
                 </tr>
@@ -343,81 +358,83 @@ export default function Goals() {
         </div>
 
         {/* Add Action Form */}
-        <div className="border-t border-gray-200 pt-4">
-          <h4 className="font-medium text-gray-700 mb-3">Neue Massnahme hinzufügen</h4>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
+        {!isReadOnly && (
+          <div className="border-t border-gray-200 pt-4">
+            <h4 className="font-medium text-gray-700 mb-3">Neue Massnahme hinzufügen</h4>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={newAction.forMan}
+                    onChange={(e) => setNewAction({ ...newAction, forMan: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                  />
+                  <span className="text-sm">m</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={newAction.forWoman}
+                    onChange={(e) => setNewAction({ ...newAction, forWoman: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                  />
+                  <span className="text-sm">w</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Ziel</label>
                 <input
-                  type="checkbox"
-                  checked={newAction.forMan}
-                  onChange={(e) => setNewAction({ ...newAction, forMan: e.target.checked })}
-                  className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                  type="text"
+                  value={newAction.goal}
+                  onChange={(e) => setNewAction({ ...newAction, goal: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Ziel der Massnahme"
                 />
-                <span className="text-sm">m</span>
-              </label>
-              <label className="flex items-center gap-2">
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Was</label>
                 <input
-                  type="checkbox"
-                  checked={newAction.forWoman}
-                  onChange={(e) => setNewAction({ ...newAction, forWoman: e.target.checked })}
-                  className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                  type="text"
+                  value={newAction.action}
+                  onChange={(e) => setNewAction({ ...newAction, action: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Beschreibung"
                 />
-                <span className="text-sm">w</span>
-              </label>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Ziel</label>
-              <input
-                type="text"
-                value={newAction.goal}
-                onChange={(e) => setNewAction({ ...newAction, goal: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                placeholder="Ziel der Massnahme"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Was</label>
-              <input
-                type="text"
-                value={newAction.action}
-                onChange={(e) => setNewAction({ ...newAction, action: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                placeholder="Beschreibung"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Wer</label>
-              <input
-                type="text"
-                value={newAction.responsible}
-                onChange={(e) => setNewAction({ ...newAction, responsible: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                placeholder="Verantwortlich"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Wann</label>
-              <input
-                type="text"
-                value={newAction.deadline}
-                onChange={(e) => setNewAction({ ...newAction, deadline: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                placeholder="z.B. Q2 2025"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={addAction}
-                disabled={saving || !newAction.goal || !newAction.action}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-                Hinzufügen
-              </button>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Wer</label>
+                <input
+                  type="text"
+                  value={newAction.responsible}
+                  onChange={(e) => setNewAction({ ...newAction, responsible: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="Verantwortlich"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Wann</label>
+                <input
+                  type="text"
+                  value={newAction.deadline}
+                  onChange={(e) => setNewAction({ ...newAction, deadline: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="z.B. Q2 2025"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={addAction}
+                  disabled={saving || !newAction.goal || !newAction.action}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                  Hinzufügen
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

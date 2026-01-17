@@ -1,4 +1,5 @@
 import { useClients } from '../context/ClientContext';
+import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,10 +19,11 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import {
-  db,
-  getGoals,
-  getPlannedActions,
-} from '../db';
+  goalsService,
+  plannedActionsService,
+  housingService,
+  budgetService,
+} from '../services/data.service';
 import type { Goal, PlannedAction, Housing, Budget } from '../types';
 import {
   PieChart,
@@ -51,7 +53,8 @@ const modules = [
 const COLORS = ['#0d9488', '#0f766e', '#115e59', '#134e4a', '#1a3a38'];
 
 export default function Dashboard() {
-  const { currentClient, clients } = useClients();
+  const { currentClient, clients, setCurrentClientId } = useClients();
+  const { isAdvisor } = useAuth();
   const navigate = useNavigate();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [actions, setActions] = useState<PlannedAction[]>([]);
@@ -61,15 +64,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (currentClient?.id) {
       Promise.all([
-        getGoals(currentClient.id),
-        getPlannedActions(currentClient.id),
-        db.housing.where('clientId').equals(currentClient.id).first(),
-        db.budget.where('clientId').equals(currentClient.id).first(),
+        goalsService.getByClientId(currentClient.id),
+        plannedActionsService.getByClientId(currentClient.id),
+        housingService.getByClientId(currentClient.id),
+        budgetService.getByClientId(currentClient.id),
       ]).then(([g, a, h, b]) => {
         setGoals(g);
         setActions(a);
-        setHousing(h || null);
-        setBudget(b || null);
+        setHousing(h);
+        setBudget(b);
       });
     }
   }, [currentClient]);
@@ -83,31 +86,35 @@ export default function Dashboard() {
             <Users className="w-10 h-10 text-primary-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Willkommen bei FINA Finanzplanung
+            Willkommen bei Finanzplanung Petertil
           </h2>
           <p className="text-gray-600 mb-8">
-            Wählen Sie einen bestehenden Klienten aus oder erstellen Sie einen neuen.
+            {isAdvisor
+              ? 'Wählen Sie einen bestehenden Klienten aus oder erstellen Sie einen neuen.'
+              : 'Bitte wählen Sie Ihren Finanzplan aus.'}
           </p>
-          <button
-            onClick={() => navigate('/clients/new')}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Neuen Klienten erstellen
-          </button>
+          {isAdvisor && (
+            <button
+              onClick={() => navigate('/clients/new')}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Neuen Klienten erstellen
+            </button>
+          )}
         </div>
 
         {clients.length > 0 && (
           <div className="mt-12">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Bestehende Klienten</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {isAdvisor ? 'Bestehende Klienten' : 'Ihre Finanzpläne'}
+            </h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {clients.map((client) => (
                 <button
                   key={client.id}
                   onClick={() => {
-                    // This will trigger context update
-                    navigate('/dashboard');
-                    window.location.reload();
+                    setCurrentClientId(client.id!);
                   }}
                   className="p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all text-left"
                 >
